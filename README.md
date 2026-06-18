@@ -1,6 +1,6 @@
 # OpenCode Memory Lite
 
-A lightweight, Markdown-based persistent memory system for AI agents. Zero database required. Provides 22 custom tools for memory management with auto-tagging, duplicate/conflict detection, structured metadata, and self-improvement capabilities.
+A lightweight, Markdown-based persistent memory system for AI agents. Zero database required. Provides 24 custom tools for memory management with auto-tagging, duplicate/conflict detection, structured metadata, and self-improvement capabilities.
 
 ## Architecture
 
@@ -36,7 +36,7 @@ A lightweight, Markdown-based persistent memory system for AI agents. Zero datab
 | `memory_task_create` | Create new task with description |
 | `memory_task_add_progress` | Add progress entry to task |
 
-### Advanced Tools (9)
+### Advanced Tools (11)
 
 | Tool | Description |
 |------|-------------|
@@ -44,10 +44,11 @@ A lightweight, Markdown-based persistent memory system for AI agents. Zero datab
 | `memory_validate` | Validate metadata format |
 | `memory_suggest_tags` | Suggest tags based on content keywords |
 | `memory_dedup` | Find duplicate sections |
+| `memory_share` | Share memory content across projects |
+| `memory_import_shared` | Import shared memory from other projects |
 | `memory_conflicts` | Detect conflicting memory entries |
 | `memory_export_json` | Export all memory to JSON |
 | `memory_import_json` | Import memory from JSON |
-| `memory_search_history` | View recent search queries |
 | `memory_analytics` | Usage patterns and health insights |
 | `memory_notifications` | Health warnings and notifications |
 
@@ -436,7 +437,7 @@ OpenCode Memory Lite is designed to be **simple, lightweight, and portable**. He
 | Dependencies | 1 package | Go binary | Many | Many |
 | Setup | Clone + npm install | Brew install | Docker | Docker |
 | Size | ~100KB | ~10MB | ~100MB | ~200MB |
-| Tools | 22 | 20+ | Many | Many |
+| Tools | 24 | 20+ | Many | Many |
 | Human-readable | Yes | No | No | No |
 | Portable | Yes | No | No | No |
 | Relevance scoring | Yes (TF-IDF) | No | Vector | No |
