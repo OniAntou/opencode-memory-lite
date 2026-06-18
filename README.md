@@ -172,6 +172,42 @@ Permissions in `opencode.json`:
 }
 ```
 
+## Why OpenCode Memory?
+
+OpenCode Memory is designed to be **simple, lightweight, and portable**. Here's how it compares to other memory systems:
+
+| Feature | OpenCode Memory | Engram | Mem0 | Zep |
+|---------|-----------------|--------|------|-----|
+| Language | TypeScript | Go | Python | Python |
+| Storage | Markdown files | SQLite + FTS5 | Vector DB | PostgreSQL |
+| Dependencies | 1 package | Go binary | Many | Many |
+| Setup | Clone + npm install | Brew install | Docker | Docker |
+| Size | ~100KB | ~10MB | ~100MB | ~200MB |
+| Tools | 17 | 20+ | Many | Many |
+| Human-readable | Yes | No | No | No |
+| Portable | Yes | No | No | No |
+
+### Strengths
+
+- **Zero dependencies** - Only needs `@opencode-ai/plugin`
+- **Human-readable** - Markdown files, open and read
+- **Portable** - Copy folder and done
+- **Simple** - No database, vector, or Docker required
+- **Auto-detect** - Tags, duplicates, conflicts automatically
+
+### Limitations
+
+- **Search** - Grep-based, not as fast as SQLite FTS5
+- **Scale** - Cannot handle thousands of entries
+- **Vector search** - No semantic search
+
+### When to use what?
+
+- **OpenCode Memory** - Personal projects, simple needs, lightweight
+- **Engram** - Need SQLite FTS5, MCP server, cloud sync
+- **Mem0** - Need vector search, semantic matching, scale
+- **Zep** - Enterprise scale, PostgreSQL, advanced features
+
 ## License
 
 MIT
