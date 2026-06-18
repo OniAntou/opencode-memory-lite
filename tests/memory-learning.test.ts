@@ -7,7 +7,7 @@ import {
   memory_corrections, 
   memory_apply_learnings,
   memory_learning_stats 
-} from './memory-learning'
+} from '../tools/memory-learning'
 
 const TEST_MEMORY_DIR = path.join(process.cwd(), '.opencode', 'memory')
 const LEARNING_FILE = path.join(TEST_MEMORY_DIR, 'learnings.md')
