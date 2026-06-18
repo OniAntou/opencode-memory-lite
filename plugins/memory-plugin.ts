@@ -48,6 +48,20 @@ interface ParsedSection {
   content: string
 }
 
+// Helper to extract tags from content
+function extractTagsFromContent(content: string): string[] {
+  const tags: string[] = []
+  const contentLower = content.toLowerCase()
+
+  for (const [tag, keywords] of Object.entries(TAG_KEYWORDS)) {
+    if (keywords.some(keyword => contentLower.includes(keyword))) {
+      tags.push(tag)
+    }
+  }
+
+  return tags.slice(0, 5) // Limit to 5 tags
+}
+
 async function readFileSafe(filePath: string): Promise<string> {
   try {
     return await fs.readFile(filePath, "utf-8")
@@ -528,6 +542,89 @@ export const MemoryPlugin: Plugin = async ({ project, client, directory, worktre
           history.push({ query: query.toLowerCase(), timestamp: new Date().toISOString(), resultCount })
           await writeFileSafe(historyFile, JSON.stringify(history.slice(-50), null, 2))
         } catch {}
+      }
+
+      // Auto-learn from edit operations (user correcting code)
+      if (toolName === "edit") {
+        const args = input.args as Record<string, unknown>
+        const filePath = String(args.filePath || args.file || "")
+        const oldString = String(args.oldString || "")
+        const newString = String(args.newString || "")
+
+        if (oldString && newString && oldString !== newString) {
+          // This is a correction - save it
+          const correctionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+          const timestamp = new Date().toISOString()
+
+          const correction = {
+            id: correctionId,
+            timestamp,
+            context: `File: ${filePath}`,
+            wrong: oldString.slice(0, 200),
+            correct: newString.slice(0, 200),
+            category: "code",
+            tags: extractTagsFromContent(newString),
+          }
+
+          // Append to corrections file
+          const correctionsFile = path.join(MEMORY_DIR, "corrections.md")
+          const existing = await readFileSafe(correctionsFile)
+          const lines = existing.trim() ? existing.split("\n") : ["# Corrections", ""]
+
+          lines.push(`## [${correctionId}]`)
+          lines.push(`<!-- timestamp: ${timestamp} | category: code | tags: ${correction.tags.join(", ")} -->`)
+          lines.push(`**Context**: ${correction.context}`)
+          lines.push(`**Wrong**: ${correction.wrong}`)
+          lines.push(`**Correct**: ${correction.correct}`)
+          lines.push("")
+
+          await writeFileSafe(correctionsFile, lines.join("\n"))
+
+          await client.app.log({
+            body: {
+              service: "memory-plugin",
+              level: "info",
+              message: `Auto-learned correction from edit in ${filePath}`,
+            },
+          })
+        }
+      }
+
+      // Auto-learn from write operations (new patterns)
+      if (toolName === "write") {
+        const args = input.args as Record<string, unknown>
+        const filePath = String(args.filePath || args.file || "")
+        const content = String(args.content || "")
+
+        // Extract patterns from new files
+        if (content.length > 100) {
+          const tags = extractTagsFromContent(content)
+          if (tags.length > 0) {
+            // Save as pattern
+            const patternId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+            const pattern = {
+              id: patternId,
+              name: `Pattern from ${path.basename(filePath)}`,
+              description: `Auto-detected pattern from ${filePath}`,
+              example: content.slice(0, 500),
+              count: 1,
+              lastUsed: new Date().toISOString(),
+              tags,
+            }
+
+            const patternsFile = path.join(MEMORY_DIR, "patterns.md")
+            const existing = await readFileSafe(patternsFile)
+            const lines = existing.trim() ? existing.split("\n") : ["# Patterns", ""]
+
+            lines.push(`## [${patternId}]`)
+            lines.push(`<!-- name: ${pattern.name} | count: 1 | lastUsed: ${new Date().toISOString()} | tags: ${pattern.tags.join(", ")} -->`)
+            lines.push(`**Description**: ${pattern.description}`)
+            lines.push(`**Example**: ${pattern.example.slice(0, 200)}...`)
+            lines.push("")
+
+            await writeFileSafe(patternsFile, lines.join("\n"))
+          }
+        }
       }
 
       if (["bash", "edit", "write"].includes(toolName)) {

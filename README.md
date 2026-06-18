@@ -32,6 +32,16 @@ Persistent memory system for OpenCode AI coding agent. Provides 17 custom tools 
 | `memory_analytics` | Usage patterns and health insights |
 | `memory_notifications` | Health warnings and notifications |
 
+### Self-Improvement Tools (5)
+
+| Tool | Description |
+|------|-------------|
+| `memory_learn` | Learn from user corrections and insights |
+| `memory_patterns` | Extract and manage coding patterns |
+| `memory_corrections` | View and manage corrections |
+| `memory_apply_learnings` | Apply learnings to improve code |
+| `memory_learning_stats` | Get learning system statistics |
+
 ### Auto Features
 
 - **Auto-tagging**: Suggests tags from content when writing (backend, flutter, database, etc.)
@@ -41,6 +51,8 @@ Persistent memory system for OpenCode AI coding agent. Provides 17 custom tools 
 - **Auto-archive**: Archives old checkpoints (>7 days)
 - **Auto-trim**: Trims MEMORY.md when >300 lines
 - **Auto-validate**: Checks metadata format on session idle
+- **Auto-learn from edits**: Automatically saves corrections when user edits code
+- **Auto-extract patterns**: Detects coding patterns from new files
 
 ## Installation
 
@@ -165,6 +177,56 @@ The memory plugin (`plugins/memory-plugin.ts`) provides:
 - **Context reconstruction**: Rebuilds context during compaction
 - **Task tracking**: Auto-saves progress when using bash/edit/write tools
 - **Auto-validation**: Logs warnings for invalid metadata
+- **Auto-learn from edits**: Automatically saves corrections when user edits code
+- **Auto-extract patterns**: Detects coding patterns from new files
+
+## Self-Improvement Features
+
+The memory system includes self-improvement capabilities inspired by Hermes Agent:
+
+### Learning from Corrections
+
+When you edit code, the system automatically saves the correction:
+
+```
+# Automatic - happens when you use edit tool
+# Saves: wrong → correct
+```
+
+### Manual Learning
+
+You can also manually teach the system:
+
+```
+memory_learn type="correction" wrong="Using var" correct="Use const/let" context="JavaScript"
+memory_learn type="insight" content="Always use early returns" context="Code style"
+memory_learn type="preference" content="Prefer functional over OOP" context="Architecture"
+```
+
+### Pattern Management
+
+The system extracts and manages coding patterns:
+
+```
+memory_patterns action="list"
+memory_patterns action="add" name="Early Return" description="Use early returns for cleaner code"
+memory_patterns action="search" query="react hooks"
+memory_patterns action="use" id="abc123"
+```
+
+### Apply Learnings
+
+Apply learned corrections and patterns to new code:
+
+```
+memory_apply_learnings context="React component with API calls"
+```
+
+### View Statistics
+
+```
+memory_learning_stats
+```
 
 ## Configuration
 
@@ -182,7 +244,12 @@ Permissions in `opencode.json`:
           "memory_list": "allow",
           "memory_task_list": "allow",
           "memory_task_create": "allow",
-          "memory_task_add_progress": "allow"
+          "memory_task_add_progress": "allow",
+          "memory_learn": "allow",
+          "memory_patterns": "allow",
+          "memory_corrections": "allow",
+          "memory_apply_learnings": "allow",
+          "memory_learning_stats": "allow"
         }
       }
     }
