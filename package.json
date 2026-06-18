@@ -1,5 +1,5 @@
 {
-  "name": "opencode-memory-system",
+  "name": "opencode-memory-lite",
   "version": "1.0.0",
   "description": "Persistent memory system for OpenCode AI coding agent with 17 tools, auto-tagging, and conflict detection",
   "main": "dist/tools/memory.js",

@@ -1,6 +1,6 @@
-# OpenCode Memory System
+# OpenCode Memory Lite
 
-Persistent memory system for OpenCode AI coding agent. Provides 22 custom tools for memory management with auto-tagging, duplicate/conflict detection, structured metadata, and self-improvement capabilities.
+A lightweight, Markdown-based persistent memory system for AI agents. Zero database required. Provides 22 custom tools for memory management with auto-tagging, duplicate/conflict detection, structured metadata, and self-improvement capabilities.
 
 ## Architecture
 
@@ -80,7 +80,7 @@ Persistent memory system for OpenCode AI coding agent. Provides 22 custom tools 
 1. Clone this repo into `~/.opencode/`:
 
 ```bash
-git clone https://github.com/OniAntou/opencode-memory-system.git ~/.opencode
+git clone https://github.com/OniAntou/opencode-memory-lite.git ~/.opencode
 ```
 
 2. Install dependencies:
@@ -94,17 +94,17 @@ cd ~/.opencode && npm install
 ### Option 2: Install via npm
 
 ```bash
-npm install opencode-memory-system
+npm install opencode-memory-lite
 ```
 
 Then copy the files to your `~/.opencode/` directory:
 
 ```bash
-cp -r node_modules/opencode-memory-system/tools ~/.opencode/
-cp -r node_modules/opencode-memory-system/plugins ~/.opencode/
-cp -r node_modules/opencode-memory-system/agents ~/.opencode/
-cp -r node_modules/opencode-memory-system/commands ~/.opencode/
-cp -r node_modules/opencode-memory-system/skills ~/.opencode/
+cp -r node_modules/opencode-memory-lite/tools ~/.opencode/
+cp -r node_modules/opencode-memory-lite/plugins ~/.opencode/
+cp -r node_modules/opencode-memory-lite/agents ~/.opencode/
+cp -r node_modules/opencode-memory-lite/commands ~/.opencode/
+cp -r node_modules/opencode-memory-lite/skills ~/.opencode/
 ```
 
 ## File Structure
@@ -425,9 +425,9 @@ curl -X POST http://localhost:3000/api/memory/write \
 curl http://localhost:3000/api/memory/stats
 ```
 
-## Why OpenCode Memory?
+## Why OpenCode Memory Lite?
 
-OpenCode Memory is designed to be **simple, lightweight, and portable**. Here's how it compares to other memory systems:
+OpenCode Memory Lite is designed to be **simple, lightweight, and portable**. Here's how it compares to other memory systems:
 
 | Feature | OpenCode Memory | Engram | Mem0 | Zep |
 |---------|-----------------|--------|------|-----|
@@ -459,7 +459,7 @@ OpenCode Memory is designed to be **simple, lightweight, and portable**. Here's 
 
 ### When to use what?
 
-- **OpenCode Memory** - Personal projects, simple needs, lightweight
+- **OpenCode Memory Lite** - Personal projects, simple needs, lightweight
 - **Engram** - Need SQLite FTS5, MCP server, cloud sync
 - **Mem0** - Need vector search, semantic matching, scale
 - **Zep** - Enterprise scale, PostgreSQL, advanced features
