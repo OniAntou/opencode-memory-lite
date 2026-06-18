@@ -1,8 +1,9 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import fs from "fs/promises"
 import path from "path"
+import { getMemoryDir, readFileSafe, writeFileSafe, parseMetadata, parseSections, metadataToComment, extractTagsFromContent, type MemoryMetadata, type ParsedSection } from '../tools/memory-utils'
 
-const MEMORY_DIR = ".opencode/memory"
+const MEMORY_DIR = getMemoryDir()
 const MAX_MEMORY_LINES = 300
 const ARCHIVE_DAYS = 7
 const NOTES_MAX_AGE_DAYS = 3
@@ -35,99 +36,6 @@ const TAG_KEYWORDS: Record<string, string[]> = {
   api: ["api", "endpoint", "rest", "graphql", "route"],
 }
 
-interface MemoryMetadata {
-  type: string
-  tags: string[]
-  importance: "low" | "medium" | "high"
-  updated: string
-}
-
-interface ParsedSection {
-  heading: string
-  metadata: MemoryMetadata | null
-  content: string
-}
-
-// Helper to extract tags from content
-function extractTagsFromContent(content: string): string[] {
-  const tags: string[] = []
-  const contentLower = content.toLowerCase()
-
-  for (const [tag, keywords] of Object.entries(TAG_KEYWORDS)) {
-    if (keywords.some(keyword => contentLower.includes(keyword))) {
-      tags.push(tag)
-    }
-  }
-
-  return tags.slice(0, 5) // Limit to 5 tags
-}
-
-async function readFileSafe(filePath: string): Promise<string> {
-  try {
-    return await fs.readFile(filePath, "utf-8")
-  } catch {
-    return ""
-  }
-}
-
-async function writeFileSafe(filePath: string, content: string): Promise<void> {
-  await fs.mkdir(path.dirname(filePath), { recursive: true })
-  await fs.writeFile(filePath, content, "utf-8")
-}
-
-function truncateByChars(content: string, maxChars: number): string {
-  if (content.length <= maxChars) return content
-  return content.slice(0, maxChars - 3) + "..."
-}
-
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4)
-}
-
-function getTimestamp(): string {
-  return new Date().toISOString()
-}
-
-function parseMetadata(comment: string): MemoryMetadata | null {
-  const match = comment.match(/<!--\s*type:\s*(.+?)\s*\|/)
-  if (!match) return null
-
-  const type = match[1].trim()
-  const tagsMatch = comment.match(/tags:\s*(.+?)\s*\|/)
-  const importanceMatch = comment.match(/importance:\s*(low|medium|high)\s*\|/)
-  const updatedMatch = comment.match(/updated:\s*(.+?)\s*-->/)
-
-  return {
-    type,
-    tags: tagsMatch ? tagsMatch[1].split(",").map(t => t.trim()) : [],
-    importance: importanceMatch ? importanceMatch[1] as MemoryMetadata["importance"] : "medium",
-    updated: updatedMatch ? updatedMatch[1].trim() : new Date().toISOString().split("T")[0],
-  }
-}
-
-function parseSections(content: string): ParsedSection[] {
-  const sections: ParsedSection[] = []
-  const lines = content.split("\n")
-  let current: ParsedSection | null = null
-
-  for (const line of lines) {
-    if (line.startsWith("## ")) {
-      if (current) sections.push(current)
-      current = { heading: line, metadata: null, content: "" }
-    } else if (current) {
-      const metaMatch = line.match(/<!--\s*type:\s*.+?\s*-->/)
-      if (metaMatch && !current.metadata) {
-        current.metadata = parseMetadata(line)
-      } else {
-        current.content += line + "\n"
-      }
-    }
-  }
-  if (current) sections.push(current)
-
-  return sections
-}
-
 function splitIntoSections(content: string): string[] {
   const sections: string[] = []
   let current = ""
@@ -144,6 +52,20 @@ function splitIntoSections(content: string): string[] {
 
   return sections
 }
+
+function truncateByChars(content: string, maxChars: number): string {
+  if (content.length <= maxChars) return content
+  return content.slice(0, maxChars - 3) + "..."
+}
+
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4)
+}
+
+function getTimestamp(): string {
+  return new Date().toISOString()
+}
+
 
 function calculateMetadataScore(meta: MemoryMetadata | null): number {
   if (!meta) return 50
@@ -356,7 +278,7 @@ async function trimMemoryIfNeeded(): Promise<{ trimmed: boolean; linesRemoved: n
   }
 
   const trimmed = preserved.map(s => {
-    const metaComment = s.metadata ? `<!-- type: ${s.metadata.type} | tags: ${s.metadata.tags.join(", ")} | importance: ${s.metadata.importance} | updated: ${s.metadata.updated} -->` : ""
+    const metaComment = s.metadata ? metadataToComment(s.metadata) : ""
     return `${s.heading}\n${metaComment}\n${s.content.trim()}`
   }).join("\n\n")
 
@@ -433,7 +355,7 @@ async function loadMemoryContentBudgeted(): Promise<string> {
 
   const result: string[] = []
   let totalTokens = 0
-  const maxTokens = Math.floor((TOKEN_BUDGET.checkpoint + TOKEN_BUDGET.memory + TOKEN_BUDGET.notes + TOKEN_BUDGET.tasks) / 4)
+  const maxTokens = TOKEN_BUDGET.checkpoint + TOKEN_BUDGET.memory + TOKEN_BUDGET.notes + TOKEN_BUDGET.tasks
 
   for (const section of allSections) {
     const tokens = estimateTokens(section.content)
@@ -598,6 +520,12 @@ export const MemoryPlugin: Plugin = async ({ project, client, directory, worktre
 
         // Extract patterns from new files
         if (content.length > 100) {
+          const skipExts = ['.json', '.lock', '.log', '.test.ts', '.spec.ts', '.d.ts', '.map', '.config.ts', '.config.js']
+          const skipDirs = ['node_modules', 'dist', '.git', 'coverage']
+          
+          if (skipExts.some(ext => filePath.endsWith(ext))) return
+          if (skipDirs.some(dir => filePath.includes(`/${dir}/`) || filePath.includes(`\\${dir}\\`) || filePath.startsWith(`${dir}/`) || filePath.startsWith(`${dir}\\`))) return
+          
           const tags = extractTagsFromContent(content)
           if (tags.length > 0) {
             // Save as pattern

@@ -1,7 +1,9 @@
 import fs from 'fs/promises'
 import path from 'path'
 
-const MEMORY_DIR = process.env.MEMORY_DIR || '.opencode/memory'
+export function getMemoryDir(): string {
+  return process.env.MEMORY_DIR || '.opencode/memory'
+}
 
 // Types
 export interface MemoryMetadata {

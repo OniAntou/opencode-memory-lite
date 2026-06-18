@@ -1,9 +1,9 @@
 import { tool } from '@opencode-ai/plugin'
 import fs from 'fs/promises'
 import path from 'path'
-import { readFileSafe, writeFileSafe, generateId } from './memory-utils'
+import { readFileSafe, writeFileSafe, generateId, getMemoryDir } from './memory-utils'
 
-const MEMORY_DIR = process.env.MEMORY_DIR || '.opencode/memory'
+const MEMORY_DIR = getMemoryDir()
 const LEARNING_FILE = path.join(MEMORY_DIR, 'learnings.md')
 const PATTERNS_FILE = path.join(MEMORY_DIR, 'patterns.md')
 const CORRECTIONS_FILE = path.join(MEMORY_DIR, 'corrections.md')
@@ -64,7 +64,7 @@ function parseCorrections(content: string): Correction[] {
 
     for (const line of lines.slice(1)) {
       if (line.startsWith('<!-- ') && line.endsWith(' -->')) {
-        const meta = line.slice(4, -3)
+        const meta = line.slice(5, -4)
         const tsMatch = meta.match(/timestamp:\s*(.+)/)
         if (tsMatch) correction.timestamp = tsMatch[1].trim()
         const catMatch = meta.match(/category:\s*(.+)/)
@@ -114,7 +114,7 @@ function parsePatterns(content: string): Pattern[] {
 
     for (const line of lines.slice(1)) {
       if (line.startsWith('<!-- ') && line.endsWith(' -->')) {
-        const meta = line.slice(4, -3)
+        const meta = line.slice(5, -4)
         const nameMatch = meta.match(/name:\s*(.+)/)
         if (nameMatch) pattern.name = nameMatch[1].trim()
         const countMatch = meta.match(/count:\s*(\d+)/)
@@ -182,6 +182,10 @@ export const memory_learn = tool({
   },
   async execute(args) {
     const { type, content, context, wrong, correct, tags } = args
+
+    if (!content.trim()) {
+      return 'Error: Content cannot be empty'
+    }
 
     const id = generateId()
     const timestamp = new Date().toISOString()
@@ -306,7 +310,7 @@ export const memory_patterns = tool({
           return `No patterns found for: ${query}`
         }
 
-        return results.map(p => `- ${p.name}: ${p.description.slice(0, 80)}...`).join('\n')
+        return results.map(p => `- ${p.name}: ${p.description.length > 80 ? p.description.slice(0, 80) + '...' : p.description}`).join('\n')
       }
 
       default:
@@ -393,8 +397,6 @@ export const memory_apply_learnings = tool({
   async execute(args) {
     const { context, code } = args
 
-    // Load learnings
-    const learningsContent = await readFileSafe(LEARNING_FILE)
     const correctionsContent = await readFileSafe(CORRECTIONS_FILE)
     const patternsContent = await readFileSafe(PATTERNS_FILE)
 

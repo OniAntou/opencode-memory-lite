@@ -1,7 +1,7 @@
 import http from 'http'
-import fs from 'fs/promises'
 import path from 'path'
 import { URL } from 'url'
+import { parseMetadata, parseSections, metadataToComment, readFileSafe, writeFileSafe, rebuildMemoryFile, type MemoryMetadata, type ParsedSection } from '../tools/memory-utils'
 
 const MEMORY_DIR = process.env.MEMORY_DIR || '.opencode/memory'
 const PORT = parseInt(process.env.PORT || '3000', 10)
@@ -17,6 +17,16 @@ interface RateLimitEntry {
 }
 
 const rateLimitMap = new Map<string, RateLimitEntry>()
+
+// Clean up expired rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetTime) {
+      rateLimitMap.delete(key)
+    }
+  }
+}, 5 * 60 * 1000)
 
 function getRateLimitKey(req: http.IncomingMessage): string {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown'
@@ -54,100 +64,27 @@ function getRateLimitHeaders(req: http.IncomingMessage): Record<string, string> 
   }
 }
 
-interface MemoryMetadata {
-  type: string
-  tags: string[]
-  importance: 'low' | 'medium' | 'high'
-  updated: string
-}
 
-interface ParsedSection {
-  heading: string
-  metadata: MemoryMetadata | null
-  content: string
-}
-
-function parseMetadata(comment: string): MemoryMetadata | null {
-  const match = comment.match(/<!--\s*type:\s*(.+?)\s*\|/)
-  if (!match) return null
-
-  const type = match[1].trim()
-  const tagsMatch = comment.match(/tags:\s*(.+?)\s*\|/)
-  const importanceMatch = comment.match(/importance:\s*(low|medium|high)\s*\|/)
-  const updatedMatch = comment.match(/updated:\s*(.+?)\s*-->/)
-
-  return {
-    type,
-    tags: tagsMatch ? tagsMatch[1].split(',').map(t => t.trim()) : [],
-    importance: importanceMatch ? (importanceMatch[1] as MemoryMetadata['importance']) : 'medium',
-    updated: updatedMatch ? updatedMatch[1].trim() : new Date().toISOString().split('T')[0],
-  }
-}
-
-function parseSections(content: string): ParsedSection[] {
-  const sections: ParsedSection[] = []
-  const lines = content.split('\n')
-  let current: ParsedSection | null = null
-
-  for (const line of lines) {
-    if (line.startsWith('## ')) {
-      if (current) sections.push(current)
-      current = { heading: line, metadata: null, content: '' }
-    } else if (current) {
-      const metaMatch = line.match(/<!--\s*type:\s*.+?\s*-->/)
-      if (metaMatch && !current.metadata) {
-        current.metadata = parseMetadata(line)
-      } else {
-        current.content += line + '\n'
-      }
-    }
-  }
-  if (current) sections.push(current)
-
-  return sections
-}
-
-function metadataToComment(meta: MemoryMetadata): string {
-  return `<!-- type: ${meta.type} | tags: ${meta.tags.join(', ')} | importance: ${meta.importance} | updated: ${meta.updated} -->`
-}
-
-async function readFileSafe(filePath: string): Promise<string> {
-  try {
-    return await fs.readFile(filePath, 'utf-8')
-  } catch {
-    return ''
-  }
-}
-
-async function writeFileSafe(filePath: string, content: string): Promise<void> {
-  await fs.mkdir(path.dirname(filePath), { recursive: true })
-  await fs.writeFile(filePath, content, 'utf-8')
-}
-
-function rebuildMemoryFile(sections: ParsedSection[]): string {
-  const parts: string[] = ['# Project Memory']
-
-  for (const section of sections) {
-    parts.push('')
-    parts.push(section.heading)
-    if (section.metadata) {
-      parts.push(metadataToComment(section.metadata))
-    }
-    parts.push(section.content.trim())
-  }
-
-  return parts.join('\n') + '\n'
-}
 
 function jsonResponse(res: http.ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify(data, null, 2))
 }
 
+const MAX_BODY_SIZE = 1024 * 1024 // 1MB
 function parseBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve) => {
     let body = ''
-    req.on('data', (chunk) => { body += chunk })
+    let size = 0
+    req.on('data', (chunk) => {
+      size += chunk.length
+      if (size > MAX_BODY_SIZE) {
+        req.destroy()
+        resolve({})
+        return
+      }
+      body += chunk
+    })
     req.on('end', () => {
       try {
         resolve(JSON.parse(body))
@@ -202,7 +139,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       const file = url.searchParams.get('file') || 'MEMORY.md'
       
       // Validate file path
-      if (file.includes('..') || file.includes('/')) {
+      if (file.includes('..') || file.includes('/') || file.includes('\\')) {
         jsonResponse(res, 400, { error: 'Invalid file path' })
         return
       }
@@ -235,7 +172,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
       }
 
       // Validate file path
-      if (String(file).includes('..') || String(file).includes('/')) {
+      if (String(file).includes('..') || String(file).includes('/') || String(file).includes('\\')) {
         jsonResponse(res, 400, { error: 'Invalid file path' })
         return
       }

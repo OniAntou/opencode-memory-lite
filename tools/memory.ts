@@ -9,11 +9,19 @@ import {
   parseMetadata,
   metadataToComment,
   extractTagsFromContent,
-  MemoryMetadata,
   ParsedSection
 } from "./memory-utils"
 
-const MEMORY_DIR = ".opencode/memory"
+import { getMemoryDir } from "./memory-utils"
+
+interface MemoryMetadata {
+  type: string
+  tags: string[]
+  importance: "low" | "medium" | "high"
+  updated: string
+}
+
+const MEMORY_DIR = getMemoryDir()
 
 // Cache for file reads
 interface CacheEntry {
@@ -122,8 +130,7 @@ interface ScoringBreakdown {
   total: number
 }
 
-// IDF cache - computed once per search
-const idfCache = new Map<string, number>()
+
 
 function computeIDF(term: string, documentCount: Map<string, number>, totalDocs: number): number {
   const docFreq = documentCount.get(term) || 0
@@ -224,8 +231,9 @@ async function searchMemoryFiles(
   const results: SearchResult[] = []
   const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2)
 
-  // First pass: collect all documents for IDF computation
+  // First pass: collect all documents for IDF computation AND cache parsed sections
   const documentCount = new Map<string, number>()
+  const parsedSectionsCache = new Map<string, ParsedSection[]>()
   let totalDocs = 0
 
   async function walkForIDF(dir: string) {
@@ -239,6 +247,8 @@ async function searchMemoryFiles(
           totalDocs++
           const content = await fs.readFile(fullPath, "utf-8")
           const sections = parseSections(content)
+          parsedSectionsCache.set(fullPath, sections)
+          
           for (const section of sections) {
             const searchText = (section.heading + " " + section.content).toLowerCase()
             for (const term of terms) {
@@ -254,42 +264,32 @@ async function searchMemoryFiles(
 
   await walkForIDF(MEMORY_DIR)
 
-  // Second pass: score each section
-  async function walkDir(dir: string) {
-    try {
-      const entries = await fs.readdir(dir, { withFileTypes: true })
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name)
-        if (entry.isDirectory()) {
-          await walkDir(fullPath)
-        } else if (entry.isFile() && entry.name.endsWith(".md")) {
-          const content = await fs.readFile(fullPath, "utf-8")
-          const sections = parseSections(content)
+  // Second pass: score each section (using cached sections)
+  for (const [fullPath, sections] of parsedSectionsCache.entries()) {
+    for (const section of sections) {
+      if (filters?.type && section.metadata?.type !== filters.type) continue
+      if (filters?.tags?.length && section.metadata) {
+        const hasTag = filters.tags.some(t => section.metadata!.tags.includes(t))
+        if (!hasTag) continue
+      }
+      if (filters?.after && section.metadata) {
+        if (new Date(section.metadata.updated) < new Date(filters.after)) continue
+      }
+      if (filters?.before && section.metadata) {
+        if (new Date(section.metadata.updated) > new Date(filters.before)) continue
+      }
 
-          for (const section of sections) {
-            if (filters?.type && section.metadata?.type !== filters.type) continue
-            if (filters?.tags?.length && section.metadata) {
-              const hasTag = filters.tags.some(t => section.metadata!.tags.includes(t))
-              if (!hasTag) continue
-            }
-            if (filters?.after && section.metadata) {
-              if (new Date(section.metadata.updated) < new Date(filters.after)) continue
-            }
-            if (filters?.before && section.metadata) {
-              if (new Date(section.metadata.updated) > new Date(filters.before)) continue
-            }
+      const searchText = (section.heading + " " + section.content).toLowerCase()
+      let allMatched = true
 
-            const searchText = (section.heading + " " + section.content).toLowerCase()
-            let allMatched = true
-
-            // Check all terms match
-            for (const term of terms) {
-              const { matched } = fuzzyMatch(term, searchText)
-              if (!matched) {
-                allMatched = false
-                break
-              }
-            }
+      // Check all terms match
+      for (const term of terms) {
+        const { matched } = fuzzyMatch(term, searchText)
+        if (!matched) {
+          allMatched = false
+          break
+        }
+      }
 
             if (allMatched && terms.length > 0) {
               // Calculate TF-IDF score
@@ -328,13 +328,9 @@ async function searchMemoryFiles(
                 ...(relevanceDetails ? { scoring_breakdown: breakdown } : {}),
               })
             }
-          }
-        }
-      }
-    } catch {}
+    }
   }
 
-  await walkDir(MEMORY_DIR)
   return results.sort((a, b) => b.score - a.score).slice(0, 20)
 }
 
@@ -404,9 +400,12 @@ Auto-detect: tags suggested, duplicates and conflicts checked.`,
       const existing = await readMemoryFile(args.file)
       const newHeading = `## ${args.type.charAt(0).toUpperCase() + args.type.slice(1)}`
 
-      // Auto-detect duplicates
+      // Auto-detect duplicates and conflicts
+      let existingSections: ParsedSection[] | null = null
+      
       if (args.content.length > 30) {
-        const existingSections = parseSections(existing)
+        existingSections = parseSections(existing)
+        
         for (const section of existingSections) {
           if (section.content.trim().length < 10) continue
           const similarity = calculateSimilarity(args.content, section.content)
@@ -414,11 +413,7 @@ Auto-detect: tags suggested, duplicates and conflicts checked.`,
             warnings.push(`Potential duplicate of "${section.heading}" (${Math.round(similarity * 100)}% similar)`)
           }
         }
-      }
 
-      // Auto-detect conflicts
-      if (args.content.length > 30) {
-        const existingSections = parseSections(existing)
         const newSection: ParsedSection = { heading: newHeading, metadata: meta, content: args.content }
         for (const section of existingSections) {
           if (!section.metadata) continue
@@ -432,7 +427,7 @@ Auto-detect: tags suggested, duplicates and conflicts checked.`,
       if (args.mode === "overwrite") {
         await writeMemoryFile(args.file, `# Project Memory\n\n${newHeading}\n${fullContent}\n`)
       } else {
-        const sections = parseSections(existing)
+        const sections = existingSections || parseSections(existing)
         const newSection: ParsedSection = {
           heading: newHeading,
           metadata: meta,
@@ -476,13 +471,7 @@ export const memory_search = tool({
     }
     const results = await searchMemoryFiles(args.query, filters, args.relevance_details)
 
-    // Record search history
-    try {
-      const raw = await readMemoryFile("search-history.json")
-      const history = raw.trim() ? JSON.parse(raw) : []
-      history.push({ query: args.query.toLowerCase(), timestamp: new Date().toISOString(), resultCount: results.length })
-      await fs.writeFile(path.join(MEMORY_DIR, "search-history.json"), JSON.stringify(history.slice(-50), null, 2), "utf-8")
-    } catch {}
+
 
     if (results.length === 0) return "No results found."
     return results.map((r, i) => {
@@ -509,7 +498,7 @@ export const memory_list = tool({
         for (const entry of entries) {
           const rel = prefix ? `${prefix}/${entry.name}` : entry.name
           if (entry.isDirectory()) {
-            await walk(entry.name, rel)
+            await walk(path.join(dir, entry.name), rel)
           } else if (entry.name.endsWith(".md")) {
             const stat = await fs.stat(path.join(MEMORY_DIR, rel))
             files.push(`${rel} (${stat.size} bytes, modified: ${stat.mtime.toISOString()})`)
@@ -620,7 +609,7 @@ export const memory_task_add_progress = tool({
     let updated = existing
 
     if (args.status) {
-      updated = updated.replace(/## Status\n\w+/, `## Status\n${args.status}`)
+      updated = updated.replace(/## Status\n.+/, `## Status\n${args.status}`)
     }
 
     const entry = `\n### ${timestamp}\n- **Action**: ${args.action}\n- **Details**: ${args.details}\n`
@@ -1138,6 +1127,9 @@ export const memory_export_json = tool({
     } catch {}
 
     const exportPath = args.file || "memory-export.json"
+    if (exportPath.includes("..") || exportPath.includes("/") || exportPath.includes("\\")) {
+      return "Error: Invalid export file path"
+    }
     const fullPath = path.join(MEMORY_DIR, exportPath)
     await fs.mkdir(path.dirname(fullPath), { recursive: true })
     await fs.writeFile(fullPath, JSON.stringify(exportData, null, 2), "utf-8")
@@ -1153,6 +1145,9 @@ export const memory_import_json = tool({
   },
   async execute(args) {
     try {
+      if (args.file.includes("..") || args.file.includes("/") || args.file.includes("\\")) {
+        return "Error: Invalid import file path"
+      }
       const fullPath = path.join(MEMORY_DIR, args.file)
       const raw = await fs.readFile(fullPath, "utf-8")
       const importData: MemoryExport = JSON.parse(raw)
@@ -1176,64 +1171,9 @@ export const memory_import_json = tool({
   },
 })
 
-// ========== Improvement: Memory Search History ==========
 
-const SEARCH_HISTORY_FILE = ".opencode/memory/search-history.json"
 
-interface SearchHistoryEntry {
-  query: string
-  timestamp: string
-  resultCount: number
-}
 
-async function loadSearchHistory(): Promise<SearchHistoryEntry[]> {
-  try {
-    const raw = await fs.readFile(path.join(MEMORY_DIR, "search-history.json"), "utf-8")
-    return JSON.parse(raw)
-  } catch {
-    return []
-  }
-}
-
-async function saveSearchHistory(history: SearchHistoryEntry[]): Promise<void> {
-  // Keep only last 50 entries
-  const trimmed = history.slice(-50)
-  await fs.writeFile(path.join(MEMORY_DIR, "search-history.json"), JSON.stringify(trimmed, null, 2), "utf-8")
-}
-
-async function recordSearch(query: string, resultCount: number): Promise<void> {
-  const history = await loadSearchHistory()
-  history.push({
-    query: query.toLowerCase(),
-    timestamp: new Date().toISOString(),
-    resultCount,
-  })
-  await saveSearchHistory(history)
-}
-
-export const memory_search_history = tool({
-  description: "View recent search history",
-  args: {
-    limit: tool.schema.number().optional().describe("Number of recent searches to show (default: 10)"),
-  },
-  async execute(args) {
-    const history = await loadSearchHistory()
-    const limit = args.limit || 10
-    const recent = history.slice(-limit).reverse()
-
-    if (recent.length === 0) {
-      return "No search history found."
-    }
-
-    const lines = [`Last ${recent.length} searches:`]
-    for (const entry of recent) {
-      const time = new Date(entry.timestamp).toLocaleTimeString()
-      lines.push(`  [${time}] "${entry.query}" → ${entry.resultCount} results`)
-    }
-
-    return lines.join("\n")
-  },
-})
 
 // ========== Improvement: Memory Analytics ==========
 
@@ -1242,7 +1182,6 @@ export const memory_analytics = tool({
   args: {},
   async execute() {
     const stats = await collectMemoryStats()
-    const history = await loadSearchHistory()
 
     const lines: string[] = ["=== Memory Analytics ===", ""]
 
@@ -1270,23 +1209,7 @@ export const memory_analytics = tool({
       lines.push(`  #${tag}: ${count}`)
     }
 
-    // Search patterns
-    if (history.length > 0) {
-      lines.push("", "--- Search Patterns ---")
-      const queryCounts: Record<string, number> = {}
-      for (const entry of history) {
-        const words = entry.query.split(/\s+/)
-        for (const word of words) {
-          if (word.length > 3) {
-            queryCounts[word] = (queryCounts[word] || 0) + 1
-          }
-        }
-      }
-      const topQueries = Object.entries(queryCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
-      for (const [query, count] of topQueries) {
-        lines.push(`  "${query}": searched ${count} times`)
-      }
-    }
+
 
     // Health insights
     lines.push("", "--- Health Insights ---")
@@ -1302,7 +1225,8 @@ export const memory_analytics = tool({
     if (stats.byImportance["high"] > stats.byImportance["low"] * 3) {
       lines.push("  ⚠ Too many high-importance entries. Consider downgrading some.")
     }
-    if (lines.length === 14) {
+    const hasWarnings = lines.some(line => line.includes("⚠"))
+    if (!hasWarnings) {
       lines.push("  ✓ Memory looks healthy!")
     }
 
