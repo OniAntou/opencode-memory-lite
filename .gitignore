@@ -7,3 +7,12 @@ memory-export.json
 search-history.json
 shared/
 archive/
+
+# Memory files (sensitive data)
+memory/MEMORY.md
+memory/checkpoint.md
+memory/notes.md
+memory/search-history.json
+memory/tasks/
+opencode.json
+package-lock.json
