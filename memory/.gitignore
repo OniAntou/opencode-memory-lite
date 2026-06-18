@@ -1,0 +1,7 @@
+# Ignore task progress (per-session)
+tasks/
+
+# Keep these tracked
+# MEMORY.md
+# checkpoint.md
+# notes.md
