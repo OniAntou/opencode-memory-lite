@@ -190,6 +190,67 @@ Permissions in `opencode.json`:
 }
 ```
 
+## HTTP API Server
+
+The memory system includes a built-in HTTP API server for accessing memory from external tools.
+
+### Start Server
+
+```bash
+npm start
+# or
+node dist/server/api.js
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| PORT | 3000 | Server port |
+| MEMORY_DIR | .opencode/memory | Memory directory |
+| API_KEY | (empty) | API key for authentication |
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/health | Health check |
+| GET | /api/memory?file=MEMORY.md | Read memory file |
+| GET | /api/memory/sections | Get parsed sections |
+| POST | /api/memory/write | Write to memory |
+| GET | /api/memory/search?q=query | Search memory |
+| GET | /api/memory/stats | Get statistics |
+| POST | /api/memory/validate | Validate metadata |
+
+### Authentication
+
+If API_KEY is set, include in request header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+### Examples
+
+```bash
+# Health check
+curl http://localhost:3000/api/health
+
+# Read memory
+curl http://localhost:3000/api/memory?file=MEMORY.md
+
+# Search
+curl "http://localhost:3000/api/memory/search?q=flutter&type=feature"
+
+# Write
+curl -X POST http://localhost:3000/api/memory/write \
+  -H "Content-Type: application/json" \
+  -d '{"content": "New entry", "type": "note"}'
+
+# Statistics
+curl http://localhost:3000/api/memory/stats
+```
+
 ## Why OpenCode Memory?
 
 OpenCode Memory is designed to be **simple, lightweight, and portable**. Here's how it compares to other memory systems:

@@ -502,10 +502,10 @@ export const MemoryPlugin: Plugin = async ({ project, client, directory, worktre
     "experimental.session.compacting": async (input, output) => {
       await saveCheckpoint(input.sessionID)
 
-      const retained = input.messages
-        ?.filter(m => m.role === "user" || m.role === "assistant")
+      const retained = (input as any).messages
+        ?.filter((m: any) => m.role === "user" || m.role === "assistant")
         .slice(-10)
-        .map(m => m.content?.toString() || "") || []
+        .map((m: any) => m.content?.toString() || "") || []
 
       const reconstructed = await reconstructContext(retained)
       if (reconstructed.trim()) {
@@ -520,7 +520,7 @@ export const MemoryPlugin: Plugin = async ({ project, client, directory, worktre
       if (toolName === "memory_search") {
         const args = input.args as Record<string, unknown>
         const query = String(args.query || "")
-        const resultCount = typeof output.result === "string" ? (output.result.match(/\n/g)?.length || 0) : 0
+        const resultCount = typeof (output as any).result === "string" ? ((output as any).result.match(/\n/g)?.length || 0) : 0
         const historyFile = path.join(MEMORY_DIR, "search-history.json")
         try {
           const raw = await readFileSafe(historyFile)
@@ -550,7 +550,7 @@ export const MemoryPlugin: Plugin = async ({ project, client, directory, worktre
 
     "command.execute.before": async (input) => {
       if (input.command === "task") {
-        const args = input.args as string[]
+        const args = (input as any).arguments?.split(' ') || []
         if (args && args[0]) {
           currentTaskId = args[0].toUpperCase()
           await client.app.log({

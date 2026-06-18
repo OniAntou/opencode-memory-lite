@@ -4,6 +4,9 @@
   "description": "Persistent memory system for OpenCode AI coding agent with 17 tools, auto-tagging, and conflict detection",
   "main": "dist/tools/memory.js",
   "types": "dist/tools/memory.d.ts",
+  "bin": {
+    "memory-server": "dist/server/api.js"
+  },
   "files": [
     "dist/",
     "README.md",
@@ -11,6 +14,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "start": "node dist/server/api.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",

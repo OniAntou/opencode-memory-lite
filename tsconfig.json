@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": ".",
@@ -17,7 +17,8 @@
   },
   "include": [
     "tools/**/*.ts",
-    "plugins/**/*.ts"
+    "plugins/**/*.ts",
+    "server/**/*.ts"
   ],
   "exclude": [
     "node_modules",
