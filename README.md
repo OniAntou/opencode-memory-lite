@@ -44,6 +44,8 @@ Persistent memory system for OpenCode AI coding agent. Provides 17 custom tools 
 
 ## Installation
 
+### Option 1: Clone repository
+
 1. Clone this repo into `~/.opencode/`:
 
 ```bash
@@ -57,6 +59,22 @@ cd ~/.opencode && npm install
 ```
 
 3. Restart OpenCode.
+
+### Option 2: Install via npm
+
+```bash
+npm install opencode-memory-system
+```
+
+Then copy the files to your `~/.opencode/` directory:
+
+```bash
+cp -r node_modules/opencode-memory-system/tools ~/.opencode/
+cp -r node_modules/opencode-memory-system/plugins ~/.opencode/
+cp -r node_modules/opencode-memory-system/agents ~/.opencode/
+cp -r node_modules/opencode-memory-system/commands ~/.opencode/
+cp -r node_modules/opencode-memory-system/skills ~/.opencode/
+```
 
 ## File Structure
 

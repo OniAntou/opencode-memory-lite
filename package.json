@@ -1,5 +1,46 @@
 {
+  "name": "opencode-memory-system",
+  "version": "1.0.0",
+  "description": "Persistent memory system for OpenCode AI coding agent with 17 tools, auto-tagging, and conflict detection",
+  "main": "dist/tools/memory.js",
+  "types": "dist/tools/memory.d.ts",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "opencode",
+    "memory",
+    "ai",
+    "agent",
+    "llm",
+    "typescript",
+    "markdown"
+  ],
+  "author": "OniAntou",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OniAntou/opencode-memory-system.git"
+  },
+  "homepage": "https://github.com/OniAntou/opencode-memory-system#readme",
+  "bugs": {
+    "url": "https://github.com/OniAntou/opencode-memory-system/issues"
+  },
   "dependencies": {
     "@opencode-ai/plugin": "1.16.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "@types/node": "^20.0.0"
   }
 }
