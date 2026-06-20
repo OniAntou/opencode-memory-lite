@@ -71,8 +71,8 @@ A lightweight, Markdown-based persistent memory system for AI agents. Zero datab
 - **Auto-archive**: Archives old checkpoints (>7 days)
 - **Auto-trim**: Trims MEMORY.md when >300 lines
 - **Auto-validate**: Checks metadata format on session idle
-- **Auto-learn from edits**: Automatically saves corrections when user edits code
-- **Auto-extract patterns**: Detects coding patterns from new files
+- **Auto-learn from edits**: Automatically saves corrections from IDE code edits (`edit`, `replace_file_content`, `multi_replace_file_content`) with auto-deduplication and task-awareness
+- **Auto-extract patterns**: Detects coding patterns from new files with auto-deduplication
 
 ## Installation
 
@@ -113,7 +113,13 @@ cp -r node_modules/opencode-memory-lite/skills ~/.opencode/
 ```
 ~/.opencode/
   tools/
-    memory.ts           # 17 custom tools
+    memory.ts           # Main tool definitions
+    memory-io.ts        # File read/write & caching
+    memory-search.ts    # Search algorithms (TF-IDF, Fuzzy)
+    memory-tasks.ts     # Task tracking
+    memory-analytics.ts # Validation & statistics
+    memory-utils.ts     # Parsing & formatting
+    memory-learning.ts  # Self-improvement features
   plugins/
     memory-plugin.ts    # Auto-checkpoint, budgeted injection
   memory/
@@ -285,8 +291,8 @@ The memory plugin (`plugins/memory-plugin.ts`) provides:
 - **Context reconstruction**: Rebuilds context during compaction
 - **Task tracking**: Auto-saves progress when using bash/edit/write tools
 - **Auto-validation**: Logs warnings for invalid metadata
-- **Auto-learn from edits**: Automatically saves corrections when user edits code
-- **Auto-extract patterns**: Detects coding patterns from new files
+- **Auto-learn from edits**: Automatically saves corrections from IDE code edits with deduplication and task-awareness
+- **Auto-extract patterns**: Detects coding patterns from new files and filters out duplicates
 
 ## Self-Improvement Features
 
@@ -294,11 +300,11 @@ The memory system includes self-improvement capabilities inspired by Hermes Agen
 
 ### Learning from Corrections
 
-When you edit code, the system automatically saves the correction:
+When you edit code (using `edit`, `replace_file_content`, `run_command`, etc.), the system automatically saves the correction, checks for duplicates, and links it to your active task:
 
 ```
-# Automatic - happens when you use edit tool
-# Saves: wrong → correct
+# Automatic - happens when you use edit or write tools
+# Saves: wrong → correct, increments count if duplicate, links to active task
 ```
 
 ### Manual Learning
