@@ -1,104 +1,44 @@
 # OpenCode Memory Lite
 
-A lightweight, Markdown-based persistent memory system for AI agents. Zero database required. Provides 24 custom tools for memory management with auto-tagging, duplicate/conflict detection, structured metadata, and self-improvement capabilities.
+[![npm version](https://img.shields.io/npm/v/opencode-memory-lite.svg)](https://www.npmjs.com/package/opencode-memory-lite)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Downloads](https://img.shields.io/npm/dm/opencode-memory-lite.svg)](https://www.npmjs.com/package/opencode-memory-lite)
 
-## Architecture
+**Lightweight, Markdown-based persistent memory for OpenCode AI agents. Zero database required.**
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     OpenCode Agent                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │ Memory Sys  │  │ Learning Sys│  │ HTTP API Server     │ │
-│  │ (17 tools)  │  │ (5 tools)   │  │ (REST endpoints)    │ │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
-│         │                │                    │              │
-│         ▼                ▼                    ▼              │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Markdown Files                         │   │
-│  │  MEMORY.md | checkpoint.md | notes.md | tasks/     │   │
-│  │  corrections.md | patterns.md | learnings.md       │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+npm install opencode-memory-lite
 ```
 
-## Features
+## Why OpenCode Memory Lite?
 
-### Core Tools (8)
+Most memory plugins require SQLite, vector databases, or Docker. **This one doesn't.**
 
-| Tool | Description |
-|------|-------------|
-| `memory_read` | Read memory files (MEMORY.md, checkpoint.md, notes.md, tasks) |
-| `memory_write` | Write content with auto-tagging and auto-detect |
-| `memory_search` | Full-text search with type/tags/date filters |
-| `memory_list` | List all memory files and sizes |
-| `memory_consolidate` | Merge duplicate sections, remove empty sections |
-| `memory_task_list` | List all task IDs and status |
-| `memory_task_create` | Create new task with description |
-| `memory_task_add_progress` | Add progress entry to task |
+| Feature | OpenCode Memory Lite | opencode-mem | Mem0 |
+|---------|---------------------|--------------|------|
+| **Dependencies** | 0 (only @opencode-ai/plugin) | Multiple | Many |
+| **Storage** | Markdown files | SQLite + USearch | Vector DB |
+| **Setup** | `npm install` | Config + DB setup | Docker |
+| **Size** | ~100KB | ~650KB | ~100MB |
+| **Human-readable** | ✅ Open any file | ❌ Binary | ❌ Binary |
+| **Portable** | ✅ Copy folder | ❌ DB migration | ❌ Export/import |
+| **Tools** | 24 | 1 | Many |
 
-### Advanced Tools (11)
+**Choose OpenCode Memory Lite if you want:**
+- Zero configuration
+- Human-readable memory files
+- No external dependencies
+- Simple deployment
 
-| Tool | Description |
-|------|-------------|
-| `memory_stats` | Memory statistics (types, importance, tags, age) |
-| `memory_validate` | Validate metadata format |
-| `memory_suggest_tags` | Suggest tags based on content keywords |
-| `memory_dedup` | Find duplicate sections |
-| `memory_share` | Share memory content across projects |
-| `memory_import_shared` | Import shared memory from other projects |
-| `memory_conflicts` | Detect conflicting memory entries |
-| `memory_export_json` | Export all memory to JSON |
-| `memory_import_json` | Import memory from JSON |
-| `memory_analytics` | Usage patterns and health insights |
-| `memory_notifications` | Health warnings and notifications |
+## Quick Start
 
-### Self-Improvement Tools (5)
-
-| Tool | Description |
-|------|-------------|
-| `memory_learn` | Learn from user corrections and insights |
-| `memory_patterns` | Extract and manage coding patterns |
-| `memory_corrections` | View and manage corrections |
-| `memory_apply_learnings` | Apply learnings to improve code |
-| `memory_learning_stats` | Get learning system statistics |
-
-### Auto Features
-
-- **Auto-tagging**: Suggests tags from content when writing (backend, flutter, database, etc.)
-- **Auto-detect duplicates**: Warns if new content is >50% similar to existing sections
-- **Auto-detect conflicts**: Warns if new content contradicts existing entries
-- **Auto-checkpoint**: Saves session state on idle
-- **Auto-archive**: Archives old checkpoints (>7 days)
-- **Auto-trim**: Trims MEMORY.md when >300 lines
-- **Auto-validate**: Checks metadata format on session idle
-- **Auto-learn from edits**: Automatically saves corrections from IDE code edits (`edit`, `replace_file_content`, `multi_replace_file_content`) with auto-deduplication and task-awareness
-- **Auto-extract patterns**: Detects coding patterns from new files with auto-deduplication
-
-## Installation
-
-### Option 1: Clone repository
-
-1. Clone this repo into `~/.opencode/`:
-
-```bash
-git clone https://github.com/OniAntou/opencode-memory-lite.git ~/.opencode
-```
-
-2. Install dependencies:
-
-```bash
-cd ~/.opencode && npm install
-```
-
-3. Restart OpenCode.
-
-### Option 2: Install via npm
+### 1. Install
 
 ```bash
 npm install opencode-memory-lite
 ```
 
-Then copy the files to your `~/.opencode/` directory:
+### 2. Copy to OpenCode directory
 
 ```bash
 cp -r node_modules/opencode-memory-lite/tools ~/.opencode/
@@ -108,243 +48,9 @@ cp -r node_modules/opencode-memory-lite/commands ~/.opencode/
 cp -r node_modules/opencode-memory-lite/skills ~/.opencode/
 ```
 
-## File Structure
+### 3. Configure permissions
 
-```
-~/.opencode/
-  tools/
-    memory.ts           # Main tool definitions
-    memory-io.ts        # File read/write & caching
-    memory-search.ts    # Search algorithms (TF-IDF, Fuzzy)
-    memory-tasks.ts     # Task tracking
-    memory-analytics.ts # Validation & statistics
-    memory-utils.ts     # Parsing & formatting
-    memory-learning.ts  # Self-improvement features
-  plugins/
-    memory-plugin.ts    # Auto-checkpoint, budgeted injection
-  memory/
-    MEMORY.md           # Main memory with structured metadata
-    checkpoint.md       # Session state
-    notes.md            # Scratch notes
-    tasks/              # Task progress files
-    shared/             # Cross-project shared memory
-  agents/
-    memory-agent.md     # Agent configuration
-  commands/
-    dream.md            # Extract knowledge from session
-    cleanup.md          # Cleanup memory
-    memory-search.md    # Search memory
-    save-progress.md    # Save task progress
-  skills/
-    memory/
-      SKILL.md          # Memory skill documentation
-```
-
-## Memory Format
-
-Memory entries use structured metadata:
-
-```markdown
-## Section Heading
-<!-- type: architecture | tags: flutter, backend | importance: high | updated: 2026-06-18 -->
-
-Content goes here...
-```
-
-### Metadata Fields
-
-| Field | Values | Description |
-|-------|--------|-------------|
-| type | architecture, decision, convention, learning, note, fix, feature | Entry type |
-| tags | comma-separated | Keywords for categorization |
-| importance | low, medium, high | Priority level |
-| date | YYYY-MM-DD | Last updated date |
-
-## Usage Examples
-
-### Write with auto-tagging
-
-```
-memory_write file="MEMORY.md" type="architecture" content="Use PostgreSQL for user database"
-```
-
-Result: Auto-tags with `backend, database`
-
-### Search with filters
-
-```
-memory_search query="flutter" type="feature" tags="mobile"
-```
-
-### Search with relevance scoring
-
-```
-memory_search query="flutter architecture" relevance_details=true
-```
-
-Result includes scoring breakdown:
-```
-1. [MEMORY.md] [architecture|high|flutter,mobile] (score: 85.2)
-Flutter Architecture
-
-  Scoring Breakdown:
-  - TF-IDF: 42.5
-  - Proximity: 30
-  - Heading: 40
-  - Exact Phrase: 0
-  - Tag: 15
-  - Metadata: 20
-  - Total: 147.5
-```
-
-**Scoring Factors:**
-- **TF-IDF** - Term Frequency × Inverse Document Frequency (rare terms score higher)
-- **Proximity** - Bonus when search terms appear close together
-- **Heading Match** - Bonus when query matches section heading
-- **Exact Phrase** - Bonus for exact phrase matches
-- **Tag Match** - Bonus when query matches metadata tags
-- **Metadata Boost** - Importance (+20 high, +10 medium) and recency (+15 recent, -5 old)
-
-### Check conflicts
-
-```
-memory_conflicts
-```
-
-### Get statistics
-
-```
-memory_stats
-```
-
-### Export/Import JSON
-
-```
-memory_export_json file="backup.json"
-memory_import_json file="backup.json"
-```
-
-### Learning from corrections
-
-```javascript
-// Auto-learn when you edit code
-// (happens automatically via plugin)
-
-// Manual learning
-memory_learn type="correction" wrong="var x = 1" correct="const x = 1" context="JavaScript"
-memory_learn type="insight" content="Always use early returns" context="Code style"
-memory_learn type="preference" content="Prefer functional over OOP" context="Architecture"
-```
-
-### Pattern management
-
-```javascript
-// List all patterns
-memory_patterns action="list"
-
-// Add a new pattern
-memory_patterns action="add" name="Early Return" description="Use early returns for cleaner code" tags="style,clean-code"
-
-// Search patterns
-memory_patterns action="search" query="react hooks"
-
-// Use a pattern (increments count)
-memory_patterns action="use" id="abc123"
-```
-
-### Apply learnings
-
-```javascript
-// Apply learned corrections and patterns to current context
-memory_apply_learnings context="React component with API calls"
-```
-
-### HTTP API
-
-```bash
-# Start server
-npm start
-
-# Health check
-curl http://localhost:3000/api/health
-
-# Read memory
-curl http://localhost:3000/api/memory?file=MEMORY.md
-
-# Search
-curl "http://localhost:3000/api/memory/search?q=flutter&type=feature"
-
-# Write
-curl -X POST http://localhost:3000/api/memory/write \
-  -H "Content-Type: application/json" \
-  -d '{"content": "New entry", "type": "note"}'
-
-# Statistics
-curl http://localhost:3000/api/memory/stats
-```
-
-## Plugin Features
-
-The memory plugin (`plugins/memory-plugin.ts`) provides:
-
-- **Budgeted injection**: Limits memory injected into context (token budget)
-- **Context reconstruction**: Rebuilds context during compaction
-- **Task tracking**: Auto-saves progress when using bash/edit/write tools
-- **Auto-validation**: Logs warnings for invalid metadata
-- **Auto-learn from edits**: Automatically saves corrections from IDE code edits with deduplication and task-awareness
-- **Auto-extract patterns**: Detects coding patterns from new files and filters out duplicates
-
-## Self-Improvement Features
-
-The memory system includes self-improvement capabilities inspired by Hermes Agent:
-
-### Learning from Corrections
-
-When you edit code (using `edit`, `replace_file_content`, `run_command`, etc.), the system automatically saves the correction, checks for duplicates, and links it to your active task:
-
-```
-# Automatic - happens when you use edit or write tools
-# Saves: wrong → correct, increments count if duplicate, links to active task
-```
-
-### Manual Learning
-
-You can also manually teach the system:
-
-```
-memory_learn type="correction" wrong="Using var" correct="Use const/let" context="JavaScript"
-memory_learn type="insight" content="Always use early returns" context="Code style"
-memory_learn type="preference" content="Prefer functional over OOP" context="Architecture"
-```
-
-### Pattern Management
-
-The system extracts and manages coding patterns:
-
-```
-memory_patterns action="list"
-memory_patterns action="add" name="Early Return" description="Use early returns for cleaner code"
-memory_patterns action="search" query="react hooks"
-memory_patterns action="use" id="abc123"
-```
-
-### Apply Learnings
-
-Apply learned corrections and patterns to new code:
-
-```
-memory_apply_learnings context="React component with API calls"
-```
-
-### View Statistics
-
-```
-memory_learning_stats
-```
-
-## Configuration
-
-Permissions in `opencode.json`:
+Add to `opencode.json`:
 
 ```json
 {
@@ -371,17 +77,103 @@ Permissions in `opencode.json`:
 }
 ```
 
-## HTTP API Server
+### 4. Restart OpenCode
 
-The memory system includes a built-in HTTP API server for accessing memory from external tools.
+Done! Memory system is now active.
 
-### Start Server
+## Features
+
+### 24 Tools for Complete Memory Management
+
+| Category | Tools |
+|----------|-------|
+| **Core (8)** | `memory_read`, `memory_write`, `memory_search`, `memory_list`, `memory_consolidate`, `memory_task_list`, `memory_task_create`, `memory_task_add_progress` |
+| **Advanced (11)** | `memory_stats`, `memory_validate`, `memory_suggest_tags`, `memory_dedup`, `memory_share`, `memory_import_shared`, `memory_conflicts`, `memory_export_json`, `memory_import_json`, `memory_analytics`, `memory_notifications` |
+| **Self-Improvement (5)** | `memory_learn`, `memory_patterns`, `memory_corrections`, `memory_apply_learnings`, `memory_learning_stats` |
+
+### Auto Features
+
+- **Auto-tagging**: Tags content automatically (backend, flutter, database, etc.)
+- **Auto-detect duplicates**: Warns when content is >50% similar
+- **Auto-detect conflicts**: Warns when content contradicts existing entries
+- **Auto-checkpoint**: Saves session state on idle
+- **Auto-archive**: Archives old checkpoints (>7 days)
+- **Auto-trim**: Keeps MEMORY.md under 300 lines
+- **Auto-validate**: Checks metadata format
+- **Auto-learn from edits**: Saves corrections from code edits
+- **Auto-extract patterns**: Detects coding patterns
+
+## Usage Examples
+
+### Write with auto-tagging
+
+```
+memory_write file="MEMORY.md" type="architecture" content="Use PostgreSQL for user database"
+```
+
+Result: Auto-tags with `backend, database`
+
+### Search with filters
+
+```
+memory_search query="flutter" type="feature" tags="mobile"
+```
+
+### Search with relevance scoring
+
+```
+memory_search query="flutter architecture" relevance_details=true
+```
+
+Output:
+```
+1. [MEMORY.md] [architecture|high|flutter,mobile] (score: 85.2)
+Flutter Architecture
+
+  Scoring Breakdown:
+  - TF-IDF: 42.5
+  - Proximity: 30
+  - Heading: 40
+  - Exact Phrase: 0
+  - Tag: 15
+  - Metadata: 20
+  - Total: 147.5
+```
+
+### Learning from corrections
+
+```
+memory_learn type="correction" wrong="var x = 1" correct="const x = 1" context="JavaScript"
+```
+
+### Pattern management
+
+```
+memory_patterns action="list"
+memory_patterns action="add" name="Early Return" description="Use early returns for cleaner code"
+memory_patterns action="search" query="react hooks"
+```
+
+## HTTP API
+
+Start the API server:
 
 ```bash
 npm start
 # or
 node dist/server/api.js
 ```
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/memory?file=MEMORY.md` | Read memory file |
+| GET | `/api/memory/sections` | Get parsed sections |
+| POST | `/api/memory/write` | Write to memory |
+| GET | `/api/memory/search?q=query` | Search memory |
+| GET | `/api/memory/stats` | Get statistics |
 
 ### Environment Variables
 
@@ -391,85 +183,61 @@ node dist/server/api.js
 | MEMORY_DIR | .opencode/memory | Memory directory |
 | API_KEY | (empty) | API key for authentication |
 
-### API Endpoints
+## Memory Format
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/health | Health check |
-| GET | /api/memory?file=MEMORY.md | Read memory file |
-| GET | /api/memory/sections | Get parsed sections |
-| POST | /api/memory/write | Write to memory |
-| GET | /api/memory/search?q=query | Search memory |
-| GET | /api/memory/stats | Get statistics |
-| POST | /api/memory/validate | Validate metadata |
+```markdown
+## Section Heading
+<!-- type: architecture | tags: flutter, backend | importance: high | updated: 2026-06-18 -->
 
-### Authentication
-
-If API_KEY is set, include in request header:
-
-```
-Authorization: Bearer YOUR_API_KEY
+Content goes here...
 ```
 
-### Examples
+| Field | Values | Description |
+|-------|--------|-------------|
+| type | architecture, decision, convention, learning, note, fix, feature | Entry type |
+| tags | comma-separated | Keywords for categorization |
+| importance | low, medium, high | Priority level |
+| date | YYYY-MM-DD | Last updated date |
 
-```bash
-# Health check
-curl http://localhost:3000/api/health
+## Plugin Features
 
-# Read memory
-curl http://localhost:3000/api/memory?file=MEMORY.md
+The memory plugin provides:
 
-# Search
-curl "http://localhost:3000/api/memory/search?q=flutter&type=feature"
+- **Budgeted injection**: Limits memory injected into context (token budget)
+- **Context reconstruction**: Rebuilds context during compaction
+- **Task tracking**: Auto-saves progress when using bash/edit/write tools
+- **Auto-validation**: Logs warnings for invalid metadata
+- **Auto-learn from edits**: Saves corrections with deduplication
+- **Auto-extract patterns**: Detects coding patterns
 
-# Write
-curl -X POST http://localhost:3000/api/memory/write \
-  -H "Content-Type: application/json" \
-  -d '{"content": "New entry", "type": "note"}'
+## Self-Improvement
 
-# Statistics
-curl http://localhost:3000/api/memory/stats
+### Learning from Corrections
+
+When you edit code, the system automatically saves the correction:
+
+```
+# Automatic - happens when you use edit or write tools
+# Saves: wrong → correct, increments count if duplicate
 ```
 
-## Why OpenCode Memory Lite?
+### Manual Learning
 
-OpenCode Memory Lite is designed to be **simple, lightweight, and portable**. Here's how it compares to other memory systems:
+```
+memory_learn type="correction" wrong="Using var" correct="Use const/let" context="JavaScript"
+memory_learn type="insight" content="Always use early returns" context="Code style"
+memory_learn type="preference" content="Prefer functional over OOP" context="Architecture"
+```
 
-| Feature | OpenCode Memory Lite | Engram | Mem0 | Zep |
-|---------|-----------------|--------|------|-----|
-| Language | TypeScript | Go | Python | Go / Python |
-| Storage | Markdown files | SQLite + FTS5 | Vector DB | PostgreSQL |
-| Dependencies | 1 package | Go binary | Many | Many |
-| Setup | Clone + npm install | Brew install | pip / Docker | Docker |
-| Size | ~100KB | ~10MB | ~100MB | ~200MB |
-| Tools | 24 | 20+ | Many | Many |
-| Human-readable | Yes | No | No | No |
-| Portable | Yes | No | No | No |
-| Relevance scoring | Yes (TF-IDF) | Yes (BM25) | Yes (Vector) | Yes (Hybrid) |
+### Apply Learnings
 
-### Strengths
+```
+memory_apply_learnings context="React component with API calls"
+```
 
-- **Zero dependencies** - Only needs `@opencode-ai/plugin`
-- **Human-readable** - Markdown files, open and read
-- **Portable** - Copy folder and done
-- **Simple** - No database, vector, or Docker required
-- **Auto-detect** - Tags, duplicates, conflicts automatically
-- **Relevance scoring** - TF-IDF, proximity, heading match, exact phrase, tag match
-- **Self-improvement** - Auto-learns from corrections, extracts patterns
+## Contributing
 
-### Limitations
-
-- **Search** - Grep-based with TF-IDF scoring, not as fast as SQLite FTS5
-- **Scale** - Cannot handle thousands of entries
-- **Vector search** - No semantic search (but TF-IDF + proximity scoring helps)
-
-### When to use what?
-
-- **OpenCode Memory Lite** - Personal projects, simple needs, lightweight
-- **Engram** - Need SQLite FTS5, MCP server, cloud sync
-- **Mem0** - Need vector search, semantic matching, scale
-- **Zep** - Enterprise scale, PostgreSQL, advanced features
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 

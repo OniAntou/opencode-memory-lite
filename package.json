@@ -1,7 +1,7 @@
 {
   "name": "opencode-memory-lite",
   "version": "1.0.0",
-  "description": "Persistent memory system for OpenCode AI coding agent with 17 tools, auto-tagging, and conflict detection",
+  "description": "Lightweight, Markdown-based persistent memory system for OpenCode AI agents. Zero database required. 24 tools with auto-tagging, duplicate/conflict detection, and self-improvement.",
   "main": "dist/tools/memory.js",
   "types": "dist/tools/memory.d.ts",
   "bin": {
@@ -22,22 +22,29 @@
   },
   "keywords": [
     "opencode",
+    "opencode-plugin",
     "memory",
     "ai",
     "agent",
     "llm",
     "typescript",
-    "markdown"
+    "markdown",
+    "persistent-memory",
+    "coding-agent",
+    "ai-memory",
+    "markdown-memory",
+    "zero-dependency",
+    "lightweight"
   ],
   "author": "OniAntou",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OniAntou/opencode-memory-system.git"
+    "url": "https://github.com/OniAntou/opencode-memory-lite.git"
   },
-  "homepage": "https://github.com/OniAntou/opencode-memory-system#readme",
+  "homepage": "https://github.com/OniAntou/opencode-memory-lite#readme",
   "bugs": {
-    "url": "https://github.com/OniAntou/opencode-memory-system/issues"
+    "url": "https://github.com/OniAntou/opencode-memory-lite/issues"
   },
   "dependencies": {
     "@opencode-ai/plugin": "1.16.2"
